@@ -413,7 +413,8 @@ impl UdpWorker {
                     match self._unreal_context.read() {
                         Ok(_context) => {
                             if let Some((a, b)) = _context.unreal2real.get(&src.port()) {
-                                if b.ip().octets()[0] == 224 || b.ip().octets()[0] == 239 || b.ip().octets()[3] == 255 {
+                                // 拒绝组播、多播udp，仅支持单播
+                                if (b.ip().octets()[0] >= 224 && b.ip().octets()[0] <= 239) || b.ip().octets()[3] == 255 {
                                     continue;
                                 }
                                 return Ok((*a, *b, size));

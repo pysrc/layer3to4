@@ -29,6 +29,10 @@ pub trait Layer3Device: Send + 'static {
                     packet::ip::Protocol::Udp => {
                         let src_addr = ipck.source();
                         let dst_addr = ipck.destination();
+                        // 拒绝组播、多播udp，仅支持单播
+                        if (dst_addr.octets()[0] >= 224 && dst_addr.octets()[0] <= 239) || dst_addr.octets()[3] == 255 {
+                            return false;
+                        }
                         let mut udpck = packet::udp::Packet::new(ipck.payload_mut()).unwrap();
                         let src_port = udpck.source();
                         let dst_port = udpck.destination();
@@ -413,10 +417,6 @@ impl UdpWorker {
                     match self._unreal_context.read() {
                         Ok(_context) => {
                             if let Some((a, b)) = _context.unreal2real.get(&src.port()) {
-                                // 拒绝组播、多播udp，仅支持单播
-                                if (b.ip().octets()[0] >= 224 && b.ip().octets()[0] <= 239) || b.ip().octets()[3] == 255 {
-                                    continue;
-                                }
                                 return Ok((*a, *b, size));
                             } else {
                                 return Err(Error::new(ErrorKind::Other, "Not context"));
